@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Weather Operations Intelligence — Executive Forecast Dashboard</title>
+  
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@500;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+  
+  <!-- Chart.js (Local Bundle with CDN Fallback) -->
+  <script src="./chart.umd.min.js"></script>
+  <script>
+    if (typeof Chart === 'undefined') {
+      document.write('<script src="https://cdn.jsdelivr.net/npm/chart.js"><\/script>');
+    }
+  </script>
+  
+  <!-- Stylesheet -->
+  <link rel="stylesheet" href="./style.css" />
+</head>
+<body>
+
+  <div class="dashboard-container">
+    
+    <!-- ====================================================================
+         HEADER
+         ==================================================================== -->
+    <header>
+      <div class="header-inner">
+        <div>
+          <div class="brand-eyebrow">
+            <span class="pulse-dot"></span>
+            Operational Meteorological Intelligence
+          </div>
+          <h1 class="brand-title" id="headerCityTitle">Weather Forecast &amp; Alert Dashboard</h1>
+          <p class="brand-subtitle" id="headerSubtitle">Loading pipeline telemetry...</p>
+        </div>
+        <div class="header-meta-badge" id="headerBadge">
+          <div>Loading metadata...</div>
+        </div>
+      </div>
+    </header>
+
+    <!-- ====================================================================
+         TOP SECTION: CURRENT CONDITIONS (5 COMPACT KPIS)
+         ==================================================================== -->
+    <section class="current-conditions-section" aria-label="Current Meteorological Conditions">
+      <div class="section-title-wrap">
+        <h2 class="section-heading" style="color: #ffffff;">Current Surface Conditions</h2>
+      </div>
+
+      <div class="kpi-row-5">
+        <!-- 1. Ambient Temperature -->
+        <div class="kpi-card kpi-temp">
+          <div class="kpi-header">
+            <span class="kpi-label">Ambient Temp</span>
+            <span class="kpi-icon">🌡️</span>
+          </div>
+          <div class="kpi-value" id="kpiTempVal">--</div>
+          <div class="kpi-subtext" id="kpiTempSub">Standard Dry-Bulb</div>
+        </div>
+
+        <!-- 2. Feels-Like (Apparent) -->
+        <div class="kpi-card kpi-feels">
+          <div class="kpi-header">
+            <span class="kpi-label">Feels-Like</span>
+            <span class="kpi-icon">👤</span>
+          </div>
+          <div class="kpi-value" id="kpiFeelsVal">--</div>
+          <div class="kpi-subtext" id="kpiFeelsSub">Biometeorological Apparent</div>
+        </div>
+
+        <!-- 3. Relative Humidity -->
+        <div class="kpi-card kpi-humidity">
+          <div class="kpi-header">
+            <span class="kpi-label">Rel. Humidity</span>
+            <span class="kpi-icon">💧</span>
+          </div>
+          <div class="kpi-value" id="kpiHumidityVal">--</div>
+          <div class="kpi-subtext" id="kpiHumiditySub">Atmospheric Moisture</div>
+        </div>
+
+        <!-- 4. Wind Speed -->
+        <div class="kpi-card kpi-wind">
+          <div class="kpi-header">
+            <span class="kpi-label">Wind Velocity</span>
+            <span class="kpi-icon">💨</span>
+          </div>
+          <div class="kpi-value" id="kpiWindVal">--</div>
+          <div class="kpi-subtext" id="kpiWindSub">10m Sustained Flow</div>
+        </div>
+
+        <!-- 5. Weather Status & Alert Level -->
+        <div class="kpi-card kpi-status">
+          <div class="kpi-header">
+            <span class="kpi-label">Current Condition</span>
+            <span class="kpi-icon">🛡️</span>
+          </div>
+          <div class="kpi-value" id="kpiStatusVal" style="font-size:20px;">--</div>
+          <div id="kpiStatusPill" class="status-pill status-nominal">
+            <span class="status-indicator-dot"></span> Checking alerts...
+          </div>
+          <div class="kpi-subtext" style="margin-top:6px;">Live Synoptic Observation</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ====================================================================
+         CONTROLS & FILTERING BAR
+         ==================================================================== -->
+    <section class="controls-panel" aria-label="Interactive Dashboard Filters">
+      <!-- Day Selection Strip -->
+      <div class="day-strip-scroll" id="dayStrip">
+        <!-- Rendered dynamically by app.js -->
+      </div>
+
+      <!-- Filters & Unit Switch -->
+      <div class="filters-row">
+        <div class="filter-group">
+          <span class="filter-caption">Filter Hourly By Condition:</span>
+          <button class="cat-btn active" data-cat="ALL">All Conditions</button>
+          <button class="cat-btn" data-cat="Clear">Clear</button>
+          <button class="cat-btn" data-cat="Clouds">Clouds</button>
+          <button class="cat-btn" data-cat="Drizzle">Drizzle</button>
+          <button class="cat-btn" data-cat="Rain">Rain</button>
+          <button class="cat-btn" data-cat="Thunderstorm">Thunderstorm</button>
+          <span class="active-filter-tag" id="activeFilterTag" style="display: none;"></span>
+        </div>
+
+        <div class="filter-group">
+          <span class="filter-caption">Unit Scale:</span>
+          <div class="unit-switch" id="unitSwitch">
+            <button class="unit-btn active" data-unit="C">°C</button>
+            <button class="unit-btn" data-unit="F">°F</button>
+          </div>
+          <button class="btn-reset" id="resetFiltersBtn">Reset Filters</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ====================================================================
+         MIDDLE SECTION: 24-HOUR HOURLY FORECAST (4 PRIORITIZED CHARTS)
+         ==================================================================== -->
+    <section class="hourly-forecast-section" aria-label="24-Hour Hourly Weather Forecast">
+      <div class="section-title-wrap">
+        <h2 class="section-heading">Hourly Meteorological Progression</h2>
+        <span class="chart-badge" id="hourlyBadge">Viewing: Rolling 24 Hours</span>
+      </div>
+
+      <!-- Hourly Empty State (Gracefully displayed when 0 timesteps available) -->
+      <div class="hourly-empty-state" id="hourlyEmptyState" style="display: none;">
+        <div class="empty-state-icon" id="emptyStateIcon">📅</div>
+        <div class="empty-state-content">
+          <h3 class="empty-state-title" id="emptyStateTitle">Hourly data unavailable for this day</h3>
+          <p class="empty-state-desc" id="emptyStateDesc">No hourly observations are available for Wed, Oct 7.</p>
+        </div>
+        <div class="empty-state-actions" id="emptyStateActions">
+          <button class="empty-state-btn primary" id="emptyStateFallbackBtn">Switch to Next 24h / Live Rolling</button>
+          <button class="empty-state-btn secondary" id="emptyStateResetFilterBtn" style="display: none;">Show All Conditions</button>
+        </div>
+      </div>
+
+      <div class="chart-grid-2x2" id="hourlyChartGrid">
+        <!-- 1. 24-Hour Temperature Line Chart -->
+        <div class="chart-card">
+          <div class="chart-card-header">
+            <div class="chart-title">24-Hour Temperature Trend</div>
+            <span class="chart-badge">Line Chart</span>
+          </div>
+          <div class="chart-canvas-wrap">
+            <canvas id="chartHourlyTemp"></canvas>
+          </div>
+          <div class="chart-card-footer">
+            <span>Ambient Dry-Bulb vs. Apparent Feels-Like Temperature</span>
+            <span>Hourly Granularity</span>
+          </div>
+        </div>
+
+        <!-- 2. 24-Hour Precipitation Bar Chart -->
+        <div class="chart-card">
+          <div class="chart-card-header">
+            <div class="chart-title">24-Hour Precipitation Profile</div>
+            <span class="chart-badge" id="precipStatusBadge">Bar &amp; Probability</span>
+          </div>
+          <div class="chart-canvas-wrap">
+            <canvas id="chartHourlyPrecip"></canvas>
+          </div>
+          <div class="chart-card-footer">
+            <span id="precipFooterNote">Accumulation depth (mm) and precipitation chance (%)</span>
+            <span>1-Hour Discrete Steps</span>
+          </div>
+        </div>
+
+        <!-- 3. 24-Hour Wind Speed Line Chart -->
+        <div class="chart-card">
+          <div class="chart-card-header">
+            <div class="chart-title">24-Hour Wind Velocity</div>
+            <span class="chart-badge">Line Chart</span>
+          </div>
+          <div class="chart-canvas-wrap">
+            <canvas id="chartHourlyWind"></canvas>
+          </div>
+          <div class="chart-card-footer">
+            <span>Sustained 10m Wind Speed</span>
+            <span>Hourly Granularity</span>
+          </div>
+        </div>
+
+        <!-- 4. 24-Hour Humidity Line Chart -->
+        <div class="chart-card">
+          <div class="chart-card-header">
+            <div class="chart-title">24-Hour Relative Humidity</div>
+            <span class="chart-badge">Line Chart</span>
+          </div>
+          <div class="chart-canvas-wrap">
+            <canvas id="chartHourlyHumidity"></canvas>
+          </div>
+          <div class="chart-card-footer">
+            <span>Relative Moisture Saturation (%)</span>
+            <span>Diurnal Cycle</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ====================================================================
+         BOTTOM SECTION: 7-DAY OUTLOOK & ACTIVE ADVISORIES PANEL
+         ==================================================================== -->
+    <section class="bottom-section" aria-label="7-Day Synoptic Outlook and Weather Alerts">
+      <div class="section-title-wrap">
+        <h2 class="section-heading">7-Day Synoptic Outlook &amp; Operational Advisories</h2>
+      </div>
+
+      <div class="bottom-section-grid">
+        <!-- 5. 7-Day Temperature Range Chart -->
+        <div class="chart-card">
+          <div class="chart-card-header">
+            <div class="chart-title">7-Day Temperature Range</div>
+            <span class="chart-badge">High vs. Low</span>
+          </div>
+          <div class="chart-canvas-wrap">
+            <canvas id="chartDailyTemp"></canvas>
+          </div>
+          <div class="chart-card-footer">
+            <span>Daily Maximum (High) and Minimum (Low) Extreme Bands</span>
+          </div>
+        </div>
+
+        <!-- 6. 7-Day Precipitation Sum Chart -->
+        <div class="chart-card">
+          <div class="chart-card-header">
+            <div class="chart-title">7-Day Precipitation Accumulation</div>
+            <span class="chart-badge">Daily Sum (mm)</span>
+          </div>
+          <div class="chart-canvas-wrap">
+            <canvas id="chartDailyPrecip"></canvas>
+          </div>
+          <div class="chart-card-footer">
+            <span>Aggregated 24-Hour Rainfall Depth</span>
+          </div>
+        </div>
+
+        <!-- 7. Active Weather Alerts Panel -->
+        <div class="alerts-card">
+          <div class="alerts-header">
+            <div class="alerts-heading">
+              <span>⚠️ Active Weather Alerts</span>
+            </div>
+            <span class="chart-badge" id="alertsCountBadge">0 Active</span>
+          </div>
+          <div class="alerts-list" id="alertsList">
+            <!-- Rendered dynamically by app.js -->
+          </div>
+          <div class="chart-card-footer" style="margin-top:auto;">
+            <span>Engine: Rule-Based Evaluation</span>
+            <span>Non-Official Advisory</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ====================================================================
+         FOOTER
+         ==================================================================== -->
+    <footer>
+      <div class="footer-credit">
+        <span id="footerCredit">Weather data provided by Open-Meteo.com under CC BY 4.0.</span>
+      </div>
+      <div class="footer-disclaimer" id="footerDisclaimer">
+        [APPLICATION NOTICE] Generated by rule threshold evaluation. This is not an official meteorological warning.
+      </div>
+      <div class="footer-disclaimer" id="footerDisclaimer">
+        Built By Girish Shenoy
+      </div>
+      <div>
+        <span class="footer-records-badge" id="footerRecords">176 Records</span>
+      </div>
+    </footer>
+
+  </div>
+
+  <!-- Dashboard Script -->
+  <script src="./app.js"></script>
+</body>
+</html>
