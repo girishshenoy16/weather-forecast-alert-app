@@ -28,7 +28,7 @@ A portfolio-grade meteorological forecasting engine and operational decision-sup
 
 ## 1. Live Demo and Dashboard Preview
 
-[![Weather Operations Intelligence Dashboard Preview](images/dashboard_preview.png)]
+![Weather Operations Intelligence Dashboard Preview](images/dashboard_preview.png)
 
 *Executive Meteorological Operations Intelligence Dashboard — Interactive PowerBI-Style Static Web Analytics Platform deployed via GitHub Pages*
 
